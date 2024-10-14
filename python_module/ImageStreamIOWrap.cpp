@@ -1031,6 +1031,19 @@ PYBIND11_MODULE(ImageStreamIOWrap, m) {
       //     py::arg("imagetype") = MATH_DATA)
 
       .def(
+          "increment_cnt2",
+          [](IMAGE &img) {
+            return ++img.md->cnt2;
+          },
+          R"pbdoc(
+            Increment the event counter cnt2
+            Parameters:
+                image  [in]:  pointer to shmim (IMAGE)
+            Return:
+                ret    [out]: cnt2 value
+            )pbdoc")
+
+      .def(
           "open",
           [](IMAGE &img, std::string name) {
             return ImageStreamIO_openIm(&img, name.c_str());
