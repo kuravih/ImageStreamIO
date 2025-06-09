@@ -1031,6 +1031,19 @@ PYBIND11_MODULE(ImageStreamIOWrap, m) {
       //     py::arg("imagetype") = MATH_DATA)
 
       .def(
+          "increment_cnt1",
+          [](IMAGE &img) {
+            return ++img.md->cnt1;
+          },
+          R"pbdoc(
+            Increment the frame counter cnt1
+            Parameters:
+                image  [in]:  pointer to shmim (IMAGE)
+            Return:
+                ret    [out]: cnt1 value
+            )pbdoc")
+  
+      .def(
           "increment_cnt2",
           [](IMAGE &img) {
             return ++img.md->cnt2;
