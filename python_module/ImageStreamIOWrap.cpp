@@ -252,6 +252,56 @@ void write(IMAGE &img,
   img.md->cnt1++;
 }
 
+template <typename T>
+void write_cnt2(IMAGE &img,
+           py::array_t<T, py::array::f_style | py::array::forcecast> b, uint64_t cnt2) {
+  if (img.array.raw == nullptr) {
+    throw std::runtime_error("image not initialized");
+  }
+  /* Request a buffer descriptor from Python */
+  py::buffer_info info = b.request();
+
+  if (img.md->datatype !=
+      PyFormatToImageStreamIODataType(info)) {
+    throw std::invalid_argument("incompatible type");
+  }
+  if (info.ndim != img.md->naxis) {
+    throw std::invalid_argument("incompatible number of axis");
+  }
+  const uint32_t *size_ptr = img.md->size;
+  for (auto &dim : info.shape) {
+    if (*size_ptr != dim) {
+      throw std::invalid_argument("incompatible shape");
+    }
+    ++size_ptr;
+  }
+
+  ImageStreamIODataType dt(img.md->datatype);
+  uint8_t *buffer_ptr = (uint8_t *)info.ptr;
+  uint64_t size = img.md->nelement * dt.asize;
+
+  img.md->write = 1;  // set this flag to 1 when writing data
+
+  void *current_image = img.array.raw;
+
+  if (img.md->location == -1) {
+    memcpy(current_image, buffer_ptr, size);
+  } else {
+#ifdef HAVE_CUDA
+    cudaSetDevice(img.md->location);
+    cudaMemcpy(current_image, buffer_ptr, size, cudaMemcpyHostToDevice);
+#else
+    throw std::runtime_error(
+        "unsupported location, CACAO needs to be compiled with -DUSE_CUDA=ON");
+#endif
+  }
+  ImageStreamIO_sempost(&img, -1);
+  clock_gettime(CLOCK_ISIO, &img.md->lastaccesstime);
+  img.md->write = 0;  // Done writing data
+  img.md->cnt1 = ++img.md->cnt0;
+  img.md->cnt2 = cnt2;
+}
+
 PYBIND11_MODULE(ImageStreamIOWrap, m) {
   m.doc() = "CACAO ImageStreamIO python module";
 
@@ -888,6 +938,106 @@ PYBIND11_MODULE(ImageStreamIOWrap, m) {
             buffer [in]:  buffer to put into memory image stream
           )pbdoc",
            py::arg("buffer"))
+
+        .def("write_cnt2", &write_cnt2<uint8_t>,
+            R"pbdoc(
+           Write into memory image stream
+           Parameters:
+             buffer [in]:  buffer to put into memory image stream
+             cnt2 [in]:  cnt2 to put into memory image stream
+           )pbdoc",
+            py::arg("buffer"),
+            py::arg("cnt2"))
+ 
+       .def("write_cnt2", &write_cnt2<uint16_t>,
+            R"pbdoc(
+           Write into memory image stream
+           Parameters:
+             buffer [in]:  buffer to put into memory image stream
+             cnt2 [in]:  cnt2 to put into memory image stream
+           )pbdoc",
+            py::arg("buffer"),
+            py::arg("cnt2"))
+ 
+       .def("write_cnt2", &write_cnt2<uint32_t>,
+            R"pbdoc(
+           Write into memory image stream
+           Parameters:
+             buffer [in]:  buffer to put into memory image stream
+             cnt2 [in]:  cnt2 to put into memory image stream
+           )pbdoc",
+            py::arg("buffer"),
+            py::arg("cnt2"))
+ 
+       .def("write_cnt2", &write_cnt2<uint64_t>,
+            R"pbdoc(
+           Write into memory image stream
+           Parameters:
+             buffer [in]:  buffer to put into memory image stream
+             cnt2 [in]:  cnt2 to put into memory image stream
+           )pbdoc",
+            py::arg("buffer"),
+            py::arg("cnt2"))
+ 
+       .def("write_cnt2", &write_cnt2<int8_t>,
+            R"pbdoc(
+           Write into memory image stream
+           Parameters:
+             buffer [in]:  buffer to put into memory image stream
+             cnt2 [in]:  cnt2 to put into memory image stream
+           )pbdoc",
+            py::arg("buffer"),
+            py::arg("cnt2"))
+ 
+       .def("write_cnt2", &write_cnt2<int16_t>,
+            R"pbdoc(
+           Write into memory image stream
+           Parameters:
+             buffer [in]:  buffer to put into memory image stream
+             cnt2 [in]:  cnt2 to put into memory image stream
+           )pbdoc",
+            py::arg("buffer"),
+            py::arg("cnt2"))
+ 
+       .def("write_cnt2", &write_cnt2<int32_t>,
+            R"pbdoc(
+           Write into memory image stream
+           Parameters:
+             buffer [in]:  buffer to put into memory image stream
+             cnt2 [in]:  cnt2 to put into memory image stream
+           )pbdoc",
+            py::arg("buffer"),
+            py::arg("cnt2"))
+ 
+       .def("write_cnt2", &write_cnt2<int64_t>,
+            R"pbdoc(
+           Write into memory image stream
+           Parameters:
+             buffer [in]:  buffer to put into memory image stream
+             cnt2 [in]:  cnt2 to put into memory image stream
+           )pbdoc",
+            py::arg("buffer"),
+            py::arg("cnt2"))
+ 
+       .def("write_cnt2", &write_cnt2<float>,
+            R"pbdoc(
+           Write into memory image stream
+           Parameters:
+             buffer [in]:  buffer to put into memory image stream
+             cnt2 [in]:  cnt2 to put into memory image stream
+           )pbdoc",
+            py::arg("buffer"),
+            py::arg("cnt2"))
+ 
+       .def("write_cnt2", &write_cnt2<double>,
+            R"pbdoc(
+           Write into memory image stream
+           Parameters:
+             buffer [in]:  buffer to put into memory image stream
+             cnt2 [in]:  cnt2 to put into memory image stream
+           )pbdoc",
+            py::arg("buffer"),
+            py::arg("cnt2"))
 
       .def(
           "create",
